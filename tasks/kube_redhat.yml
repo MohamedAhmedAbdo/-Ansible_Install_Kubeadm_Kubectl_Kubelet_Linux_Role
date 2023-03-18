@@ -1,0 +1,50 @@
+- name: Adding Kubernetes repo
+  yum_repository:
+    name: Kubernetes
+    description: This is Kubernetes Repo
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
+    enabled: 1
+    gpgcheck: 1
+    gpgkey: 
+      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    exclude:
+      - kubelet
+      - kubeadm
+      - kubectl
+
+- name: Put SELinux in permissive mode
+  ansible.posix.selinux:
+   state: permissive
+   policy: targeted
+
+
+- name: making the SELinux change persistent across reboots
+  shell: |
+    sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+    exit 0
+
+- name: Disable Firewalld
+  service:
+    name: firewalld
+    state: stopped
+
+
+
+- name: Swapping Off
+  shell: | 
+    swapoff -a
+    exit 0
+
+
+- name: Install Kubeadm
+  yum:
+    name: ['kubelet', 'kubeadm', 'kubectl']
+    state: present
+    disable_excludes: all
+
+- name: Start service kubelet
+  service:
+    name: kubelet
+    state: started
+    enabled: yes
+
